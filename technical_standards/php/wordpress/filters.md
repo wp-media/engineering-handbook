@@ -19,10 +19,15 @@ In consequence, this can cause errors with the code using this value, especially
 Our plugins are used by thousands of users, on millions of websites so we must expect that someone will mess with our filters at some point. Moreover, the error will usually be reported from a file within our plugin's codebase, even if the mistyped value is introduced by another third-party.
 
 ### Safeguarding returned value
-To prevent this issue, whenever we implement a custom filter in our code, we need to safeguard the returned filter value before using it further: in case the filtered value is not as expected, we should fallback to the default one.
+To prevent this issue, whenever we implement a custom filter in our code, we need to safeguard the returned filter value before using it further: in case the filtered value is not as expected, we should fallback to the default one. 
 
-Our current approach to this is to use the [apply-filters-typed library](https://github.com/wp-media/apply-filters-typed). It has the benefit of adding logs in debug mode to warn developers of filters being misused.
+The safeguarding mechanism is usually based on types, but can be stricter depending on the context: for instance, a price must be a float but also be stricly positive.
 
+Our current approach to this is to use the [apply-filters-typed library](https://github.com/wp-media/apply-filters-typed). It has the benefit of adding logs in debug mode to warn developers of filters being misused. Complex value checks can be handled with [the custom type validation feature](https://github.com/wp-media/apply-filters-typed?tab=readme-ov-file#create-your-own-type-validation) of the library.
+
+Note that the same approach applies to callbacks re-using the argument being filtered.
+
+#### Previous practice
 Before the introduction of this library, or when complex validation is needed, we were explicitely validating the returned value as follows:
 ```php
 // Variable with the default value for the filter
