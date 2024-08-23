@@ -75,4 +75,3 @@ public function set_value() {
 	return $fixture_value;
 }
 ```
-
