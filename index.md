@@ -13,7 +13,7 @@ Engineering and Tech are complex ; there are many possible ways of working, appr
 
 There is so much to know to craft software that having a reference can greatly help to address questions such as "How should we do this?", "Has anyone experienced this before?". This handbook should be a go-to for any engineering teammate facing those questions and looking for already-experienced solutions within the company.
 
-This is an ever on-going process as we constantly learn, deconstruct, reinvent and revisit: this handbook should be the reflect of this learning process and help to capture the *what* and the *why*. This way, every best practice can be self-standing and eventually challenged to keep on refining.  Every document of this handbook describes the best way someone previously found to address the issues they encountered: maybe the issues and context changed since then, maybe they missed a better approach, etc. We are doing our best, and you can do it too by challenging and contributing.
+This is an ever ongoing process as we constantly learn, deconstruct, reinvent and revisit: this handbook should be the reflection of this learning process and help to capture the *what* and the *why*. Hence, every best practice can be self-standing and eventually challenged to keep on refining.  Every document of this handbook describes the best way someone previously found to address the issues they encountered: maybe the issues and context changed since then, maybe they missed a better approach, etc. We are doing our best, and you can do it too by challenging and contributing.
 
 As part of the WordPress ecosystem, WP Media believes in open source and actively contribute to open-source projects. Therefore, it is important for us to publicly maintain our Engineering handbook to provide transparency about our engineering practices, foster standardization, best practices and quality in the industry, share knowledge and finally open the dialogue on the topic.
 
@@ -23,7 +23,7 @@ This handbook is primarily designed by and for WP Media Engineering teammates to
 
 Therefore, it does not aim at teaching anyone how to be or become an engineer. 
 
-While this handbook may containing valuable take-aways for other engineers, it is opinionated and does not try to reflect the perfect state-of-the-art of engineering.
+While this handbook may contain valuable takeaways for other engineers, it is opinionated and does not try to reflect the perfect state-of-the-art of engineering.
 
 ### Contributing
 
@@ -38,3 +38,4 @@ This handbook is maintained by WP Media Engineering team. The website is built f
 #####  [Reviews](ways_of_working/processes/reviews.md)
 ### [Technical standards](technical_standards/index.md)
 #### [PHP](technical_standards/php/index.md)
+##### [WordPress](technical_standards/php/wordpress/index.md)

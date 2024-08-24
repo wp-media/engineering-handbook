@@ -11,21 +11,21 @@ The Engineering team designs, implements, delivers and maintains production-read
 
 ### Missions & Responsibilities:
 
-- Implements and delivers features into our products to match the product & marketing teams’s vision ;
+- Implements and delivers features into our products to match the product & marketing teams' vision ;
 - Monitor and maintain the quality of our products and services to ensure a best-in-class quality of service ;
 - Assist the support team to investigate issues and provide solutions so that our customers can fully benefit from our products ;
 - Continuously explore, contribute and improve engineering practices and throughout WP Media, group.One and the WordPress community to foster a culture of technical innovation and excellence.
 
 ## Service team
 
-The Engineering Service team implements and maintains WP Media’ services for internal and external users so that the company can efficiently delivers the best web optimization experience.
+The Engineering Service team implements and maintains WP Media’ services for internal and external users so that the company can efficiently deliver the best web optimization experience.
 
 ### Missions & Responsibilities:
 
-- Monitor, maintain and improve commercial services (company’s websites, order & license system) to implement the product & marketing teams’s vision ;
-- Monitor, maintain and improve optimization services (product services) to implement the product & marketing teams’s vision ;
+- Monitor, maintain and improve commercial services (company’s websites, order & license system) to implement the product & marketing teams' vision ;
+- Monitor, maintain and improve optimization services (product services) to implement the product & marketing teams' vision ;
 - Monitor, maintain and improve back-office services, tooling and architecture (data, technical stacks, tooling, monitoring & alerting, infrastructure) to achieve the best-in-class quality of service and empower WP Media’s teams ;
-- Leverage synergies with group.One infrastructures and teams for our back-end services to continuously improve the team’s efficiency.
+- Leverage synergies with group.One's infrastructures and teams for our back-end services to continuously improve the team’s efficiency.
 
 ## Plugin team
 
