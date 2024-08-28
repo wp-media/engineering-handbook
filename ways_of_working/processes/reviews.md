@@ -99,7 +99,20 @@ To get diff coverage reported directly on the Pull Requests:
 - Authorize Codacy app on GitHub to access the repository.
 - Instruct the test tools to output a coverage report during the CI. For instance, with `--coverage-php tests/report/unit.cov` for PHPUnit, or `--cov=. --cov-report=xml` for Pytest.
 - Once the report is available, upload it to Codacy using [the dedicated GitHub action](https://github.com/codacy/codacy-coverage-reporter-action/tree/v1/).
-You can check the [CI of apply-filters-typed](https://github.com/wp-media/apply-filters-typed/blob/develop/.github/workflows/test.yml) as a good example.
+You can check the [CI of apply-filters-typed](https://github.com/wp-media/apply-filters-typed/blob/develop/.github/workflows/test.yml) as a good example. Here are the steps related to Codacy:
+```
+    - name: Unit/Integration tests
+      run: composer run-tests
+
+    - name: Merge Code Coverage Reports
+      run: composer report-code-coverage
+
+    - name: Run codacy-coverage-reporter
+      uses: codacy/codacy-coverage-reporter-action@v1
+      with:
+        project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        coverage-reports: tests/report/coverage.clover
+```
 
 #### Diff coverage with diff-cover
 
@@ -110,3 +123,62 @@ To get diff coverage reported directly on the Pull Requests:
 - Instruct the test tools to output a coverage report during the CI. For instance, with `--coverage-php tests/report/unit.cov` for PHPUnit, or `--cov=. --cov-report=xml` for Pytest.
 - Once the report is available, add steps in the CI to run diff-cover and send comments and annotations to the PR.
 As an example, check out the [TB-TT CI](https://github.com/wp-media/TB-TT/blob/develop/.github/workflows/ci-on_pr_main_bash.yml).
+
+```
+    - name: Run pytest
+      run: |
+        pytest -m "not staging_env" --cov=. --cov-report=xml 
+      shell: bash
+
+      - name: Generate diff-coverage report
+        if: github.event_name == 'pull_request'
+        run: |
+          diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --markdown-report diff-cover-report.md --exclude test*.py --fail-under=50 --expand_coverage_report
+          echo "DIFF_COVER_EXIT_STATUS=$?" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Delete previous diff-cover reports
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            
+            for (const comment of comments) {
+              if (comment.user.login === 'github-actions[bot]' && comment.body.includes('# Diff Coverage')) {
+                console.log(`Deleting comment with ID: ${comment.id}`);
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: comment.id
+                });
+              }
+            }
+        env:
+          GITHUB_TOKEN: ${{ secrets.DIFF_COVER_COMMENT }} 
+
+      - name: Post diff-cover report to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('diff-cover-report.md', 'utf8');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment,
+            });
+      - name: Fail job if coverage is below threshold
+        if: github.event_name == 'pull_request'
+        run: |
+          if [[ "${{ env.DIFF_COVER_EXIT_STATUS }}" -ne 0 ]]; then
+            echo "Coverage below threshold; failing the job."
+            exit 1
+          fi
+        shell: bash
+```
