@@ -49,7 +49,7 @@ Our teams SLA is to handle reviews within 24 hours. If you don't get any reviews
 
 Many checks and validations can be done automatically on each PR, without the need for a human to perform any actions. The set of automated checks is called the Automated Continuous Integration Pipeline (CI). While it can differ between each repository, mostly depending on the language, we have baselines that should be common to all our CIs.
 
-On GitHub, we leverage GitHub actions to implement our CIs.
+On GitHub, we leverage GitHub actions to implement our CIs. For each main task to be performed by the CI, it is preferred to use separate *jobs* so that they can fail independently, facilitating investigation and allowing to retry only the needed steps.
 
 ### Pull Request Description validation
 
@@ -86,4 +86,27 @@ Diff coverage step identifies all lines being modified by your PR, and checks wh
 
 When a line is not covered, it means that it could be removed or altered without any tests failing, which is a great risk for regression in the future. On the contrary, a covered line is not totally safe: a line being executed during a test does not mean its logic is fully tested and validated. Therefore, diff coverage must be taken as an indication of untested lines of code for developers to self-review and improve autonomously their coverage.
 
-We globally aim at a minimum of 50% diff coverage. Below this, this step of the pipeline must fail.
+We globally aim at a minimum of 50% diff coverage. Below this, this step of the pipeline must fail. This should not be a mandatory step to validate, as it depends on the context of the PR and the impacted lines.
+
+We have two ways of computing and reporting diff coverage, depending on the repository we are working on.
+
+#### Diff coverage with Codacy
+
+[Codacy](https://www.codacy.com/login) is a platform that analyses git repositories and additional reports such as code coverage to report metrics. We use it on our public repositories as those features are free for them.
+
+To get diff coverage reported directly on the Pull Requests:
+- Add the repository on the Codacy account and check its configuration, especially Integrations & Gates.
+- Authorize Codacy app on GitHub to access the repository.
+- Instruct the test tools to output a coverage report during the CI. For instance, with `--coverage-php tests/report/unit.cov` for PHPUnit, or `--cov=. --cov-report=xml` for Pytest.
+- Once the report is available, upload it to Codacy using [the dedicated GitHub action](https://github.com/codacy/codacy-coverage-reporter-action/tree/v1/).
+You can check the [CI of apply-filters-typed](https://github.com/wp-media/apply-filters-typed/blob/develop/.github/workflows/test.yml) as a good example.
+
+#### Diff coverage with diff-cover
+
+[diff-cover](https://github.com/Bachmann1234/diff_cover) is an open-source library that computes diff coverage based on coverage reports and git diff, for any languages.
+We use it for our private repositories for which Codacy is not available.
+
+To get diff coverage reported directly on the Pull Requests:
+- Instruct the test tools to output a coverage report during the CI. For instance, with `--coverage-php tests/report/unit.cov` for PHPUnit, or `--cov=. --cov-report=xml` for Pytest.
+- Once the report is available, add steps in the CI to run diff-cover and send comments and annotations to the PR.
+As an example, check out the [TB-TT CI](https://github.com/wp-media/TB-TT/blob/develop/.github/workflows/ci-on_pr_main_bash.yml).
