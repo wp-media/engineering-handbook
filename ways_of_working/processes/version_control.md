@@ -17,7 +17,7 @@ Git is a powerful system that supports many workflows and ways of using it. To e
 #### Long-lived branches
 
 Our standard repository configuration is to have two main branches: `trunk` and `develop`:
-- `trunk` updates should correspond to releases. The current state of trunk should therefore be the codebase currently in production (for services) or the latest released version (for plugins). Usually, pushes to trunk will trigger a CI/CD process to perform a release. 
+- `trunk` updates should correspond to releases. The current state of trunk should therefore be the codebase currently in production (for services) or the latest released version (for plugins). Pushes to trunk are related to a release process. For instance, a CI/CD process can be automated based on this action ; or releases can be tagged based on this branch. 
 - `develop` should be the main branch from which development branches will start from, and be merged into.
 
 `develop` should always be strictly ahead of `trunk`. If it is not the case, `trunk` must be merged back into `develop`.
@@ -39,6 +39,7 @@ Apart from the long-lived branches, branch names must be self-explanatory and fo
     - `feature` for branches introducing a new feature.
     - `fix` for branches that fix a bug.
     - `enhancement` for branches introducing an enhancement of an already-existing feature
+    - `chore` for branches handling technical maintenance such as editing documentation, adding tests, cleaning up code, changing version numbers, updating dependencies, etc.
 - `issue_number` should be the number identifying the GitHub issue this PR is addressing.
 - `short_description` should be a few words, separated by `-`, that quickly explain the topic of the branch.
 
@@ -58,9 +59,11 @@ Our standard configuration is to protect both the `trunk` and the `develop` bran
 
 Those rules enforce the [peer-review process](reviews.md), ensuring the code we produce and released is at least validated by two developers.
 
-#### Deleting branches
+#### Closing branches
 
-Once a branch has been merged, it should be deleted. This ensures that we keep only branches for ongoing work, easing the identification of in progress development on a repository.
+Branch owners are responsible for ensuring their branches don't end up stale. If they are relevant, they should be merged and deleted, otherwise they can be closed and deleted. To merge a branch, our [review process](reviews.md) must be followed.
+
+Once a branch has been merged (or closed), it should be deleted. This ensures that we keep only branches for ongoing work, easing the identification of in progress development on a repository.
 
 ### Commits
 
@@ -70,4 +73,23 @@ Commit messages are critical for teammates to navigate the history and quickly u
 
 ## Releases
 
-### Version numbers
+Releases are linked to a push to the `trunk` branch typically for a merge from `develop`, and ideally automated through CI/CD (GitHub actions). The deployment process may vary depending on the repository, and is quite different for our plugins and our services for example. However, we have some common steps. All our releases should be tagged as such on their GitHub repository and an internal release note should be shared internally. Those steps should ideally be automated as they facilitate knowledge sharing and ease investigation in case of bugs or regressions.
+
+Thanks to our branch management, branch protections and CIs, code must have been reviewed and must be passing the CI before getting into a release. Depending on the project, manual tests on the develop branch can be conducted to ensure the version is properly working.
+
+### Version name/numbers
+
+It is important to clearly name each release to ease the discussion about them. Depending on the repository, we can have 2 version naming system.
+- **For releases deliverable to users** (typically WordPress plugins), we use [semantic versioning](https://semver.org/), which is also the recommended standard for [PHP](https://www.php.net/manual/en/function.version-compare.php) and [WordPress](https://developer.wordpress.org/plugins/wordpress-org/how-your-readme-txt-works/#readme-header-information). This syntax is well understood by most users and fits well with our release cycle of plugins.
+- **For service releases** (websites, apps, back-ends, ...), we use timestamp versioning with the following syntax: _yyyy.MM.dd-hhmm_ . This approach better fits continuous delivery where version bumps are more of a burden than providing actual benefits. The timestamp is automatically picked during the automated delivery.
+
+### Release notes
+
+Keeping all teammates up-to-date and providing them with a consistent way of knowing about the changes is key in ensuring all operations can smoothly be performed and continuously adapted company-wide: this is true for engineering teammates but also support, product, marketing, etc. Standardize release notes are a great way to achieve this goal.
+
+Every release must have a corresponding release note in our corresponding Notion database. Internal release notes (apps, websites, back-ends, ...) should be automated. Release notes can also be manually added or appended if needed.
+
+To be useful and readable, releases notes must:
+- Reference the corresponding version number, product and date;
+- List all technical changes with a link to the corresponding GitHub issue or PR (for automated release notes, the automated release description from GitHub should be leveraged);
+- Explain the impact and changes experienced from a user perspective.
