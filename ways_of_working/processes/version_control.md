@@ -69,7 +69,8 @@ Once a branch has been merged (or closed), it should be deleted. This ensures th
 
 Usually, a single developer is working on a branch. Therefore, it could seem sufficient to commit all changes once they are ready and working. However, this can cause troubles if one needs to circle back to the implementation to investigate a bug or understand what has been implemented. More numerous, small and well-scoped commits can help to navigate the changes, test intermediate versions for a bug, and eventually precisely rollback changes. Therefore, commits should rather be done frequently, and only contain a small, well-defined scope. 
 
-Commit messages are critical for teammates to navigate the history and quickly understand the reason of a change. The first line of a commit message is a brief summary of the commit, describing the expected result of the change or what is modified in the code. Then, a longer message can be added to provide more details if needed. This appended message must be separated from the first line by a blank line, to ensure the first line remains the highly visible description.
+Commit messages are critical for teammates to navigate the history and quickly understand the reason of a change. The first line of a commit message is a brief summary of the commit, describing the expected result of the change or what is modified in the code. It should be a continuation of "This commit will...".
+Then, a longer message can be added to provide more details if needed. This appended message must be separated from the first line by a blank line, to ensure the first line remains the highly visible description.
 
 ## Releases
 
