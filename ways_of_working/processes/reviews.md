@@ -29,6 +29,9 @@ If your PR is part of a more complex code change and is not useful on its won, n
 
 If your PR covers a complete fix/enhancement/feature on its own, then the target branch should be the `develop` branch.
 
+Before starting your work on your local environment, checkout `develop` branch and rebase to keep it updated and avoid future conflicts. 
+Then create your work branch from `develop`.
+
 ### Pull Request description
 
 The Pull Request description is the document that will follow your code until it reaches production, through peer reviews, QA testing, release notes and documentation. For all teammates to perform those steps accurately, they need to quickly grasp the context of your PR, the reasons why the implementation has been done this way, what it changes, etc. While this is obvious to you after spending hours working on it, it is likely not the case for teammates ; so make sure to make the Pull Request as self-standing as possible!
