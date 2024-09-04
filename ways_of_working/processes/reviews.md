@@ -100,6 +100,7 @@ To get diff coverage reported directly on the Pull Requests:
 - Instruct the test tools to output a coverage report during the CI. For instance, with `--coverage-php tests/report/unit.cov` for PHPUnit, or `--cov=. --cov-report=xml` for Pytest.
 - Once the report is available, upload it to Codacy using [the dedicated GitHub action](https://github.com/codacy/codacy-coverage-reporter-action/tree/v1/).
 You can check the [CI of apply-filters-typed](https://github.com/wp-media/apply-filters-typed/blob/develop/.github/workflows/test.yml) as a good example. Here are the steps related to Codacy:
+
 ```
     - name: Unit/Integration tests
       run: composer run-tests
