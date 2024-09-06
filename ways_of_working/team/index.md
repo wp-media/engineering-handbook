@@ -1,1 +1,1 @@
-- [Missions & Purposes of the Engineering teams](missions_and_purposes_of_the_engineering_team.md)
+- [Missions & Purposes of the Engineering team](missions_and_purposes_of_the_engineering_team.md)
