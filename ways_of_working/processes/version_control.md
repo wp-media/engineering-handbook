@@ -82,7 +82,7 @@ Thanks to our branch management, branch protections and CIs, code must have been
 
 It is important to clearly name each release to ease the discussion about them. Depending on the repository, we can have 2 version naming system.
 - **For releases deliverable to users** (typically WordPress plugins), we use [semantic versioning](https://semver.org/), which is also the recommended standard for [PHP](https://www.php.net/manual/en/function.version-compare.php) and [WordPress](https://developer.wordpress.org/plugins/wordpress-org/how-your-readme-txt-works/#readme-header-information). This syntax is well understood by most users and fits well with our release cycle of plugins.
-- **For service releases** (websites, apps, back-ends, ...), we use timestamp versioning with the following syntax: _yyyy.MM.dd-hhmm_ . This approach better fits continuous delivery where version bumps are more of a burden than providing actual benefits. The timestamp is automatically picked during the automated delivery.
+- **For service releases** (websites, apps, back-ends, ...), we use timestamp versioning with the following syntax: _yyyy.MM.dd-hhmm_. This approach better fits continuous delivery where version bumps are more of a burden than providing actual benefits. The timestamp is automatically picked during the automated delivery.
 
 ### Release notes
 
