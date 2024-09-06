@@ -10,7 +10,7 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v4
           with:
-            fetch-depth: 2
+            fetch-depth: 0
         - name: Push Markdown to Notion
           uses: MathieuLamiot/push-md-to-notion@main
           id: push_markdown
