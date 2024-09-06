@@ -3,7 +3,7 @@ notion_page: https://www.notion.so/wpmedia/Missions-Purposes-of-the-Engineering-
 title: Missions & Purposes of the Engineering team
 ---
 
-# Missions & Purposes of the Engineering team
+# Missions & Purposes of the Engineering teams
 
 ## Engineering team
 
