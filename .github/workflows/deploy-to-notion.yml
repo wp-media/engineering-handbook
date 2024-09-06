@@ -12,7 +12,7 @@ jobs:
           with:
             fetch-depth: 0
         - name: Push Markdown to Notion
-          uses: MathieuLamiot/push-md-to-notion@main
+          uses: JoshStern/push-md-to-notion@v0.3.0
           id: push_markdown
           with:
             notion-token: ${{ secrets.NOTION_TOKEN }}
