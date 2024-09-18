@@ -50,14 +50,23 @@ Here are a few examples:
 
 #### Branch protections
 
-Branch protections are rules that can prevent some events on specific branches. They can be configured for each repository on GitHub in the Settings of the repository.
+Branch protections are rules that can prevent some events on specific branches. They can be configured for each repository on GitHub in the Settings of the repository. Those rules enforce the [peer-review process](reviews.md), ensuring the code we produce and released is at least validated by two developers, and that our quality standards are met (code style, automated testing, coverage, etc.).
 
-Our standard configuration is to protect both the `trunk` and the `develop` branches with the following rules:
+Our standard configuration is to protect both the `trunk` and the `develop` branches with different settings. The configuration of specific repository can differ, based on the specific context and needs; the following guidelines are recommendations for mature repositories with trustable CI and automations.
+
+On `develop`, we apply the following rules:
 - Require a pull request before merging: all commits must be made to a non-protected branch and submitted via a pull request before they can be merged into a branch that matches this rule.
     - Require 1 approval: pull requests targeting a matching branch require a number of approvals and no changes requested before they can be merged.
     - Dismiss stale pull request approvals when new commits are pushed: New reviewable commits pushed to a matching branch will dismiss pull request review approvals.
+- Require status checks to pass before merging: critical steps of the CI must be validated before merging, typically linter and tests.
+    - Require branches to be up-to-date before merging: This ensures that the current state of `develop` always passes the CI.
+Those rules are quite restrictive to ensure that, under the nominal development flow, our quality standards are applied.
+When available (on public repositories), we can enable the GitHub merge queue to automate the update of branches, CI runs and merge. This is not available on private repositories.
 
-Those rules enforce the [peer-review process](reviews.md), ensuring the code we produce and released is at least validated by two developers.
+On `trunk`, we apply less restrictive rules:
+- Require a pull request before merging: all commits must be made to a non-protected branch and submitted via a pull request before they can be merged into a branch that matches this rule.
+    - Dismiss stale pull request approvals when new commits are pushed: New reviewable commits pushed to a matching branch will dismiss pull request review approvals.
+Since `trunk` is used as the baseline for deployments, it is important to keep it easily accessible for eventual hotfixes. Engineering teammates are responsible for pushing to this branch responsibly.
 
 #### Closing branches
 
