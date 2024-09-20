@@ -21,7 +21,7 @@ This allows tests to be anti-fragile and ease the amount of maintenance required
 
 Second, we value tests as a way to communicate by using integration tests primary instead of unit tests, we are putting business requirements at the center of our testing process allowing communication with the product team and QA.
 
-![](/home/cyrille/engineering-handbook/technical_standards/php/testing/_images/diamont.png)
+![](./_images/diamont.png)
 
 ### Acceptance criteria are the base
 
@@ -82,7 +82,7 @@ To create a valid acceptance criteria, we need always to have at least three par
 - **Act**: This part is here to describe the part of the code that will be executed and so tested.
 - **Assert**: The goal from that last part is to make sure that we are in the state we expect.
 
-![Acceptance criteria](/home/cyrille/engineering-handbook/technical_standards/php/testing/_images/AC.png)
+![Acceptance criteria](./_images/AC.png)
 
 ### The best code is no code
 
