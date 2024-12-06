@@ -1,1 +1,2 @@
 - [WordPress](wordpress/index.md)
+- [PHPStan](phpstan.md)
