@@ -49,6 +49,7 @@ WordPress supports these placeholders:
 - `%s` - String (most common, can be used for most data types)
 - `%d` - Integer
 - `%f` - Float
+- `%i` - SQL Identifier (for table/column names)
 - `%%` - Literal percentage character
 
 ```php
@@ -64,32 +65,36 @@ $wpdb->prepare(
 
 ### Table/Column Names in Prepared Statements
 
-A common mistake is using prepared statements for table or column names. **This doesn't work correctly** because `$wpdb->prepare()` will add quotes around the values, which breaks SQL syntax for identifiers.
+When dealing with dynamic table or column names, you have two options:
 
-#### Incorrect Approach
+#### Option 1: Using the %i Placeholder (WordPress 6.1+)
+
+Since WordPress 6.1, the `%i` placeholder can be used specifically for SQL identifiers (table and column names):
 
 ```php
-// WRONG - This will cause syntax errors
+// Using %i for SQL identifiers
 $column = 'post_title';
 $results = $wpdb->get_results(
     $wpdb->prepare(
-        "SELECT %s FROM $wpdb->posts",
+        "SELECT %i FROM $wpdb->posts",
         $column
     )
 );
-// Results in: SELECT 'post_title' FROM wp_posts (invalid SQL)
+// Results in: SELECT `post_title` FROM wp_posts (valid SQL)
 ```
 
-#### Correct Approach
+The `%i` placeholder:
+- Escapes the identifier
+- Adds backticks automatically
+- Prevents SQL injection in column/table names
+- Works only with simple identifiers (not with expressions)
 
-For dynamic table or column names:
+#### Option 2: Sanitize and Insert Directly
 
-1. Sanitize the identifiers
-2. Use backticks for column/table names
-3. Insert them directly into the query string (not via prepared statements)
+For broader compatibility or more complex scenarios:
 
 ```php
-// RIGHT - Sanitize and use directly with backticks
+// Sanitize and use directly with backticks
 $column = sanitize_key( $column );
 $results = $wpdb->get_results(
     "SELECT `{$column}` FROM $wpdb->posts WHERE post_status = 'publish'"
@@ -98,45 +103,24 @@ $results = $wpdb->get_results(
 
 ### Real-World Example: Dynamic Column in JOIN
 
-This is a common pattern that causes errors:
+Using `%i` for identifiers:
 
 ```php
-// WRONG - Will cause SQL syntax errors
+// Using %i for column identifiers
 $dimension = 'page';
 $metrics = $wpdb->get_results(
     $wpdb->prepare(
-        "SELECT t1.%s as %s, t1.clicks, t1.impressions
-         FROM ( SELECT %s, SUM(clicks) as clicks FROM {$wpdb->prefix}stats 
-                GROUP BY %s) as t1
-         LEFT JOIN ( SELECT %s, SUM(clicks) as clicks FROM {$wpdb->prefix}stats 
-                     GROUP BY %s) as t2
-         ON t1.%s = t2.%s",
+        "SELECT t1.%i as %i, t1.clicks, t1.impressions
+         FROM ( SELECT %i, SUM(clicks) as clicks FROM {$wpdb->prefix}stats 
+                GROUP BY %i) as t1
+         LEFT JOIN ( SELECT %i, SUM(clicks) as clicks FROM {$wpdb->prefix}stats 
+                     GROUP BY %i) as t2
+         ON t1.%i = t2.%i",
         $dimension, $dimension, $dimension, $dimension, 
         $dimension, $dimension, $dimension, $dimension
     )
 );
-// Results in invalid SQL with quoted column names and syntax errors
-```
-
-Correct approach:
-
-```php
-// RIGHT - Sanitize and use directly with backticks
-$dimension = sanitize_key( $dimension );
-$sql = "SELECT t1.`{$dimension}` as `{$dimension}`, t1.clicks, t1.impressions
-        FROM ( SELECT `{$dimension}`, SUM(clicks) as clicks 
-               FROM {$wpdb->prefix}stats GROUP BY `{$dimension}`) as t1
-        LEFT JOIN ( SELECT `{$dimension}`, SUM(clicks) as clicks 
-                    FROM {$wpdb->prefix}stats GROUP BY `{$dimension}`) as t2
-        ON t1.`{$dimension}` = t2.`{$dimension}`";
-
-// Only use prepare for actual data values
-$metrics = $wpdb->get_results(
-    $wpdb->prepare(
-        $sql,
-        // Add any data parameters here
-    )
-);
+// Results in valid SQL with properly escaped identifiers
 ```
 
 ## Performance: Caching Database Results
