@@ -433,3 +433,13 @@ The migration command above can then be used through a CLI in the app to manuall
 ### Examples
 
 The approach presented in this page is used and illustrated in [this private repository](https://gitlab.group.one/rankmath/seo-platform/-/commit/0c02b78cd5ec496929373bd7022113e5e4526581). There are further elements around the CLI to facilitate management of the database, such as automatically generating the schema.sql file thanks to the `command-sync-schema.js`.
+
+### Frictions between git and schema.sql
+
+When working on database changes in branches off of the main development branch, merging changes can result in a wrong `schema.sql` file. When merging or reviewing branches, extra attention must be paid to this file, to ensure the result is as expected. In case the file does not correspond to what is expected, a quick remediation is to destroy the database, start it again from scratch and run the migrations.
+
+```bash
+db destroy
+db start
+db migrate
+```
