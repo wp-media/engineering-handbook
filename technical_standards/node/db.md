@@ -5,123 +5,126 @@ title: Node.js - Database Management
 
 # Database Management
 
-Effective database management is critical for building reliable, performant Node.js applications. This guide outlines our approach to database connections, data access layers, and migrations in Express.js applications.
+Effective database management is critical for building reliable, performant Node.js applications. This guide outlines our recommended approach to database connections, data access layers, and migrations in Node.js applications.
 
 ## Database Connection
 
-We prioritize a simple, direct approach to database connectivity, starting with plain SQL queries and adding abstractions only when necessary.
+We encourage a simple, direct approach to database connectivity, starting with plain SQL queries and adding abstractions only when necessary. We believe that having a good understanding of the database behavior is key to building a reliable and scalable application. Abstractions through tools like ORM can be beneficial for complex apps and developers with a good understanding of the underlying logic, but they can be detrimental for simpler projects without advanced needs of DB usage.
 
 ### Using Plain SQL with node-postgres
 
-For PostgreSQL databases, we use the [node-postgres](https://node-postgres.com/) library:
+For plain SQL with PostgreSQL databases, we recommend using the [node-postgres](https://node-postgres.com/) library:
 
 ```bash
 npm install pg
 ```
 
-### Database Connection Setup
+### Database Connection Class
 
-Set up your database connection in a dedicated module:
+Set up your database connection in a dedicated class:
 
 ```javascript
-// db/index.js
-import pg from 'pg';
-const { Pool } = pg;
+//Database.js
+import pg from "pg";
 
-export default function registerDatabaseInServiceLocator(serviceLocator) {
-  // Create a connection pool
-  const pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'myapp',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || '',
-    max: 20, // Maximum number of clients in the pool
-    idleTimeoutMillis: 30000,
-  });
+export default class Database {
+  constructor(dbConfig) {
+    this.pool = new pg.Pool(dbConfig);
+  }
 
-  // Test the connection
-  pool.on('connect', () => {
-    console.log('Connected to PostgreSQL database');
-  });
+  /**
+   * Close the connection pool.
+   *
+   * Since we are using connection pooling, we can risk leaking connections. If
+   * that happens it would leave the container running in a broken state.
+   *
+   * @param {number} timeout How many ms to wait until releasing clients
+   */
+  async close(timeout = 0) {
+    let timeoutHandle;
+    if (typeof timeout === "number" && timeout > 0) {
+      timeoutHandle = setTimeout(() => {
+        console.error(
+          `Timeout after ${timeout} ms. Forcefully releasing all clients...`,
+        );
+        this.pool._clients.forEach((client) => client.release());
+      }, timeout);
+    }
+    await this.pool.end();
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
 
-  pool.on('error', (err) => {
-    console.error('Unexpected error on idle client', err);
-    process.exit(-1);
-  });
+  async getClient() {
+    return this.pool.connect();
+  }
 
-  // Define the database interface
-  const db = {
-    query: (text, params) => pool.query(text, params),
-    getClient: async () => {
-      const client = await pool.connect();
-      const query = client.query;
-      const release = client.release;
-
-      // Set a timeout of 5 seconds, after which we will log this client's last query
-      const timeout = setTimeout(() => {
-        console.error('A client has been checked out for more than 5 seconds!');
-        console.error(`The last executed query on this client was: ${client.lastQuery}`);
-      }, 5000);
-
-      // Monkey patch the query method to keep track of the last query executed
-      client.query = (...args) => {
-        client.lastQuery = args;
-        return query.apply(client, args);
-      };
-
-      client.release = () => {
-        clearTimeout(timeout);
-        client.query = query;
-        client.release = release;
-        return release.apply(client);
-      };
-
-      return client;
-    },
-    end: () => pool.end(),
-  };
-
-  return db;
+  async query(text, params) {
+    const start = Date.now();
+    const res = await this.pool.query(text, params);
+    const duration = Date.now() - start;
+    console.log("executed query", { text, duration, rows: res.rowCount });
+    return res;
+  }
 }
 ```
+
+The `dbConfig` should get its values from environment variables to facilitate deployments on various contexts:
+
+```javascript
+      user: getEnv("POSTGRES_USER"),
+      password: getEnv("POSTGRES_PASSWORD"),
+      host: getEnv("POSTGRES_HOST"),
+      port: getEnv("POSTGRES_PORT"),
+      database: getEnv("POSTGRES_DB"),
+```
+
+The Database connection class and its configuration can be easily put together with the Service Locator pattern.
 
 ### Integrating with Service Locator
 
 Register the database in your service locator during application startup:
 
 ```javascript
-// serviceLocator.js
-import registerDatabaseInServiceLocator from './db/index.js';
-
-export const ServiceLocator = {};
-
-// Register services
-ServiceLocator.db = registerDatabaseInServiceLocator(ServiceLocator);
-
-// Get database service
-ServiceLocator.getDatabase = () => ServiceLocator.db;
+//service-locator.js
+import ServiceLocator from "dislocator";
+import registerDatabaseService from "./services/database.js";
+import registerConfigService from "./services/config.js";
+import registerDalService from "./services/dal.js";
+export default function createServiceLocator() {
+  const serviceLocator = new ServiceLocator();
+  serviceLocator
+    .use(registerConfigService)
+    .use(registerDalService)
+    .register("db", registerDatabaseService(serviceLocator));
+  return serviceLocator;
+}
 ```
 
-### Using the Database Connection
+```javascript
+//services/database.js
+import Database from "../Database.js";
 
-Access the database through the service locator:
+export default function registerDatabaseService({ config }) {
+  return new Database(config.db);
+}
+```
+
+The `dbConfig` configuration mentionned above should be part of `./services/config.js` in this example:
 
 ```javascript
-// Example usage in a service
-import { ServiceLocator } from '../serviceLocator.js';
-
-export async function getSiteById(id) {
-  const db = ServiceLocator.getDatabase();
-  
-  const query = {
-    text: 'SELECT * FROM sites WHERE id = $1',
-    values: [id],
-  };
-  
-  const result = await db.query(query);
-  return result.rows[0];
-}
+//services/config.js
+export default function registerConfigService(serviceLocator) {
+  serviceLocator.register("config", {
+    db: {
+      user: getEnv("POSTGRES_USER"),
+      password: getEnv("POSTGRES_PASSWORD"),
+      host: getEnv("POSTGRES_HOST"),
+      port: getEnv("POSTGRES_PORT"),
+      database: getEnv("POSTGRES_DB"),
+    },
+  });
 ```
 
 ## DAL Abstraction
@@ -133,12 +136,49 @@ The Data Access Layer (DAL) provides a clean abstraction over database operation
 Organize your DAL by domain entities:
 
 ```
-/db
-  /dal
-    site.js
-    user.js
-    report.js
-  index.js
+/handlers
+/services
+/dal
+  AccountDAL.js
+  DAL.js
+  ReportDAL.js
+  ScanQueueDAL.js
+app.js
+```
+
+A DataAccessLayer class defined in `DAL.js` allows to list and instantiate all the existing DAL modules as follows:
+- The service locator uses the DAL service
+- The DAL service register the DataAccessLayer class
+- The DataAccessLayer class provides each DAL module.
+
+```javascript
+//services/dal.js
+import DataAccessLayer from "../dal/DAL.js";
+export default function registerDalService(serviceLocator) {
+  serviceLocator.register(
+    "dal",
+    () => new DataAccessLayer(serviceLocator.get("db")),
+  );
+}
+```
+
+```javascript
+//dal/DAL.js
+import { ProvisionerTokensDAL } from "./ProvisionerTokenDAL.js";
+import { ReportDAL } from "./ReportDAL.js";
+import { ScanQueueDAL } from "./ScanQueueDAL.js";
+import { AccountDAL } from "./AccountDAL.js";
+
+export default class DataAccessLayer {
+  constructor(db) {
+    this.db = db;
+
+    this.provisionerTokens = new ProvisionerTokensDAL(db);
+    this.scanQueue = new ScanQueueDAL(db);
+    this.account = new AccountDAL(db);
+    this.report = new ReportDAL(db);
+  }
+}
 ```
 
 ### Implementing DAL Modules
@@ -146,138 +186,62 @@ Organize your DAL by domain entities:
 Create entity-specific DAL modules:
 
 ```javascript
-// db/dal/site.js
-export default function createSiteDAL(db) {
-  return {
-    /**
-     * Get all sites
-     * @returns {Promise<Array>} Array of site objects
-     */
-    async getAll() {
-      const result = await db.query('SELECT * FROM sites ORDER BY name');
-      return result.rows;
-    },
-    
-    /**
-     * Get a site by ID
-     * @param {number} id - Site ID
-     * @returns {Promise<Object|null>} Site object or null if not found
-     */
-    async getById(id) {
-      const result = await db.query(
-        'SELECT * FROM sites WHERE id = $1',
-        [id]
-      );
-      return result.rows[0] || null;
-    },
-    
-    /**
-     * Create a new site
-     * @param {Object} site - Site data
-     * @returns {Promise<Object>} Created site with ID
-     */
-    async create(site) {
-      const result = await db.query(
-        'INSERT INTO sites (name, url, created_at) VALUES ($1, $2, NOW()) RETURNING *',
-        [site.name, site.url]
-      );
-      return result.rows[0];
-    },
-    
-    /**
-     * Update a site
-     * @param {number} id - Site ID
-     * @param {Object} site - Updated site data
-     * @returns {Promise<Object|null>} Updated site or null if not found
-     */
-    async update(id, site) {
-      const result = await db.query(
-        'UPDATE sites SET name = $1, url = $2, updated_at = NOW() WHERE id = $3 RETURNING *',
-        [site.name, site.url, id]
-      );
-      return result.rows[0] || null;
-    },
-    
-    /**
-     * Delete a site
-     * @param {number} id - Site ID
-     * @returns {Promise<boolean>} True if deleted, false if not found
-     */
-    async delete(id) {
-      const result = await db.query(
-        'DELETE FROM sites WHERE id = $1 RETURNING id',
-        [id]
-      );
-      return result.rowCount > 0;
+// dal/AccountDAL.js
+export class AccountDAL {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async createAccount(payload) {
+    const result = await this.db.query(
+      ` INSERT INTO accounts (email)
+        VALUES ($1)
+        RETURNING uuid;`,
+      [payload.email],
+    );
+
+    if (result.rowCount !== 1) {
+      throw new Error("Unexpected error during account creation");
     }
-  };
+
+    return result.rows[0].uuid;
+  }
 }
+
 ```
 
-### Registering DAL Modules
-
-Register DAL modules with the service locator:
-
-```javascript
-// serviceLocator.js
-import registerDatabaseInServiceLocator from './db/index.js';
-import createSiteDAL from './db/dal/site.js';
-import createUserDAL from './db/dal/user.js';
-
-export const ServiceLocator = {};
-
-// Register database
-ServiceLocator.db = registerDatabaseInServiceLocator(ServiceLocator);
-
-// Register DAL modules
-ServiceLocator.siteDAL = createSiteDAL(ServiceLocator.db);
-ServiceLocator.userDAL = createUserDAL(ServiceLocator.db);
-
-// Getter methods
-ServiceLocator.getDatabase = () => ServiceLocator.db;
-ServiceLocator.getSiteDAL = () => ServiceLocator.siteDAL;
-ServiceLocator.getUserDAL = () => ServiceLocator.userDAL;
-```
-
-### Using the DAL in Services
+### Using the DAL
 
 Create service modules that use the DAL:
 
 ```javascript
-// services/site.js
-import { ServiceLocator } from '../serviceLocator.js';
+// handlers/account.js
+import express from "express";
+import httpErrors from "http-errors";
+import validation from "one-validation";
 
-export function createSiteService() {
-  const siteDAL = ServiceLocator.getSiteDAL();
-  
-  return {
-    async getAll() {
-      return await siteDAL.getAll();
-    },
-    
-    async getById(id) {
-      return await siteDAL.getById(id);
-    },
-    
-    async create(siteData) {
-      // Validate or transform data as needed
-      return await siteDAL.create(siteData);
-    },
-    
-    async update(id, siteData) {
-      // Validate or transform data as needed
-      return await siteDAL.update(id, siteData);
-    },
-    
-    async delete(id) {
-      return await siteDAL.delete(id);
+export default function accountsHandler(serviceLocator) {
+  const app = express.Router();
+  const dal = serviceLocator.dal;
+
+  app.post("/", async (req, res) => {
+    if (
+      !req.body ||
+      typeof req.body !== "object" ||
+      !req.body.email ||
+      typeof req.body.email !== "string" ||
+      !validation.email.test(req.body.email)
+    ) {
+      throw new httpErrors.BadRequest("Invalid request body");
     }
-  };
-}
 
-// Register in service locator
-ServiceLocator.siteService = createSiteService();
-ServiceLocator.getSiteService = () => ServiceLocator.siteService;
+    const result = await dal.account.createAccount({
+      email: req.body.email,
+    });
+
+    return res.status(201).json({ uuid: result });
+  });
+
 ```
 
 ## Database Migrations
