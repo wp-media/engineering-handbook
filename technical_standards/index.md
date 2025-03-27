@@ -1,2 +1,4 @@
+- [IDE Configuration](ide_configuration.md)
+- [Repository Guidelines](repo_guidelines.md)
 - [PHP](php/index.md)
 - [Python](python/index.md)
