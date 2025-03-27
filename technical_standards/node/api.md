@@ -13,7 +13,7 @@ We prioritize clarity and simplicity in our routing structure, making it easy to
 
 ### Direct Controller Wiring
 
-Wire controllers directly in the main application file (or in the app factory) for better visibility:
+Wire controllers directly in the main application file (or in the app factory) for better visibilit of all available routes:
 
 ```javascript
 import express from "express";
@@ -79,8 +79,7 @@ export default function scanQueuesHandler(serviceLocator) {
       throw new httpErrors.BadRequest("Invalid URL format");
     }
     const { job_id } = await dal.scanQueue.createScan({
-      url,
-      type: "single",
+      url
     });
     res.status(201).json({ job_id });
   });
@@ -119,6 +118,7 @@ Let's say we have endpoints for `/api/v1/site` and `/api/v2/site`. Chances are t
 ## Route Parameter Validation
 
 Validate route parameters early in your request handling. This should be part of the handler/controller, to ensure that the inputs sent to the services and the business logic are as expected. In case a validation fails, a proper error message must be returned along with a Bad Request (400) error code including the missing parameter and/or its expected type/format.
+For more details, see the [input validation](input_validation.md) guidelines.
 
 ```javascript
   app.post("/", async (req, res) => {

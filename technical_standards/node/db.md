@@ -5,11 +5,11 @@ title: Node.js - Database Management
 
 # Database Management
 
-Effective database management is critical for building reliable, performant Node.js applications. This guide outlines our recommended approach to database connections, data access layers, and migrations in Node.js applications.
+Effective database management is critical for building reliable, performant and understandable Node.js applications. This guide outlines our recommended approach to database connections, data access layers, and migrations in Node.js applications.
 
 ## Database Connection
 
-We encourage a simple, direct approach to database connectivity, starting with plain SQL queries and adding abstractions only when necessary. We believe that having a good understanding of the database behavior is key to building a reliable and scalable application. Abstractions through tools like ORM can be beneficial for complex apps and developers with a good understanding of the underlying logic, but they can be detrimental for simpler projects without advanced needs of DB usage.
+We encourage a simple, direct approach to database connectivity, starting with plain SQL queries and adding abstractions only when necessary. We believe that having a good understanding of the database behavior is key to building a reliable and scalable application. Abstractions through tools like ORM can be beneficial for complex apps and developers with a good understanding of the underlying logic, but they can be detrimental for simpler projects without advanced needs of database usage.
 
 ### Using Plain SQL with node-postgres
 
@@ -80,7 +80,7 @@ The `dbConfig` should get its values from environment variables to facilitate de
       database: getEnv("POSTGRES_DB"),
 ```
 
-The Database connection class and its configuration can be easily put together with the Service Locator pattern.
+The Database connection class and its configuration can be easily put together with the [Service Locator pattern](service_locator.md).
 
 ### Integrating with Service Locator
 
@@ -111,7 +111,7 @@ export default function registerDatabaseService({ config }) {
 }
 ```
 
-The `dbConfig` configuration mentionned above should be part of `./services/config.js` in this example:
+The `dbConfig` configuration mentioned above should be part of `./services/config.js` in this example:
 
 ```javascript
 //services/config.js
@@ -246,20 +246,19 @@ export default function accountsHandler(serviceLocator) {
 
 ## Database Migrations
 
-Database migrations help manage schema changes over time. We use plain SQL for migrations to maintain full control and clarity.
+Database migrations help manage schema changes over time. We recommend plain SQL for migrations to maintain full control and clarity over the operations we are doing. Migrations represent the successive changes done to the data model over time. We also encourage maintaining the current data model in a dedicated file to quickly understand the current state.
 
 ### Migration Structure
 
 Organize migrations in a dedicated directory:
 
 ```
-/db
+/database
   /migrations
     001-initial-schema.sql
     002-add-user-roles.sql
     003-add-site-metrics.sql
-  /dal
-  index.js
+  schema.sql
 ```
 
 ### Writing SQL Migrations
@@ -267,187 +266,170 @@ Organize migrations in a dedicated directory:
 Use plain SQL for migrations:
 
 ```sql
--- migrations/001-initial-schema.sql
+CREATE TYPE scan_queue_status AS ENUM ('pending', 'completed', 'running', 'failed');
+CREATE TYPE scan_queue_type AS ENUM ('main', 'single');
 
--- Create sites table
-CREATE TABLE IF NOT EXISTS sites (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  url VARCHAR(2000) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP
+CREATE TABLE scan_queues (
+    id SERIAL PRIMARY KEY,
+    uuid UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
+    job_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    account_id UUID NULL,
+    site_id UUID NULL,
+    page_id UUID NULL,
+    url TEXT NOT NULL,
+    type scan_queue_type NOT NULL DEFAULT 'single',
+    status scan_queue_status NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create users table
-CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
-  email VARCHAR(255) NOT NULL UNIQUE,
-  name VARCHAR(255) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP
-);
+CREATE INDEX IF NOT EXISTS idx_status_created_at ON scan_queues (status, created_at);
+CREATE INDEX IF NOT EXISTS idx_updated_at ON scan_queues (updated_at);
+CREATE INDEX IF NOT EXISTS idx_job_id ON scan_queues (job_id);
+CREATE INDEX IF NOT EXISTS idx_url ON scan_queues (url);
 
--- Create user_sites table for many-to-many relationship
-CREATE TABLE IF NOT EXISTS user_sites (
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  site_id INTEGER NOT NULL REFERENCES sites(id) ON DELETE CASCADE,
-  role VARCHAR(50) NOT NULL DEFAULT 'viewer',
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (user_id, site_id)
-);
 ```
 
-### Migration Runner
+### Managing migrations
 
-Create a utility to run migrations:
+Migrations should not be applied multiple times, therefore it is key to track which migration has already been applied to a given database. For this, we recommend using a dedicated table.
+
+```sql
+  CREATE TABLE migrations (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    filename TEXT NOT NULL,
+    file_content TEXT NOT NULL
+  );
+```
+
+Then, a command to look for migration files to apply and run them can be created as follows:
 
 ```javascript
-// db/migrations/runner.js
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from "node:path";
+import fs from "node:fs/promises";
+import {
+  dbConfig,
+  isDevelopment,
+  isProduction,
+} from "./config-from-environment.js";
+import pg from "pg";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DATABASE_DIR = path.resolve(import.meta.dirname, "../../database");
+const DATABASE_MIGRATIONS_DIR = path.resolve(DATABASE_DIR, "migrations");
 
-export async function runMigrations(db) {
+const MIGRATIONS_TABLE_SCHEMA = `
+  CREATE TABLE migrations (
+    id SERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    filename TEXT NOT NULL,
+    file_content TEXT NOT NULL
+  );
+`;
+
+async function findMigrationFiles(dirname) {
+  let migrationFiles = await fs.readdir(dirname);
+  migrationFiles = migrationFiles.sort();
+  return migrationFiles;
+}
+
+async function findAppliedMigrations(client) {
+  const res = await client.query("SELECT * FROM migrations;");
+
+  let appliedMigrationsSet = new Set();
+
+  for (const migration of res.rows) {
+    appliedMigrationsSet.add(migration.filename);
+  }
+
+  return appliedMigrationsSet;
+}
+
+async function checkTableExists(client, tableName) {
   try {
-    // Create migrations table if it doesn't exist
-    await db.query(`
-      CREATE TABLE IF NOT EXISTS migrations (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL UNIQUE,
-        applied_at TIMESTAMP NOT NULL DEFAULT NOW()
-      )
-    `);
-    
-    // Get applied migrations
-    const { rows: appliedMigrations } = await db.query(
-      'SELECT name FROM migrations ORDER BY id'
+    const res = await client.query(
+      `SELECT EXISTS (
+              SELECT FROM information_schema.tables
+              WHERE table_name = $1
+          ) AS table_exists;`,
+      [tableName],
     );
-    const appliedMigrationNames = appliedMigrations.map(m => m.name);
-    
-    // Get all migration files
-    const migrationFiles = await fs.readdir(__dirname);
-    const sqlFiles = migrationFiles
-      .filter(file => file.endsWith('.sql'))
-      .sort(); // Ensure ordered execution
-    
-    // Run pending migrations
-    for (const file of sqlFiles) {
-      if (!appliedMigrationNames.includes(file)) {
-        console.log(`Applying migration: ${file}`);
-        
-        // Get migration SQL
-        const filePath = path.join(__dirname, file);
-        const sql = await fs.readFile(filePath, 'utf8');
-        
-        // Start a transaction
-        const client = await db.getClient();
-        try {
-          await client.query('BEGIN');
-          
-          // Run the migration
-          await client.query(sql);
-          
-          // Record the migration
-          await client.query(
-            'INSERT INTO migrations (name) VALUES ($1)',
-            [file]
-          );
-          
-          await client.query('COMMIT');
-          console.log(`Migration applied: ${file}`);
-        } catch (error) {
-          await client.query('ROLLBACK');
-          console.error(`Migration failed: ${file}`, error);
-          throw error;
-        } finally {
-          client.release();
-        }
+
+    return res.rows[0].table_exists;
+  } catch (err) {
+    console.error("Error checking table existence:", err);
+    return false;
+  }
+}
+
+const ADVISORY_LOCK_ID = "7010016611124574584";
+
+export default async function commandMigrate() {
+  const client = new pg.Client(dbConfig);
+  await client.connect();
+
+  try {
+    if (isProduction) {
+      console.log("Waiting for advisory lock...");
+      await client.query("SELECT pg_advisory_lock($1)", [ADVISORY_LOCK_ID]);
+    }
+
+    const hasMigrationsTable = await checkTableExists(client, "migrations");
+
+    if (!hasMigrationsTable) {
+      console.error("Found no migrations table. Creating it...");
+      await client.query(MIGRATIONS_TABLE_SCHEMA);
+    }
+
+    const migrationFiles = await findMigrationFiles(DATABASE_MIGRATIONS_DIR);
+    const appliedMigrationsSet = await findAppliedMigrations(client);
+    let migrationsToApply = migrationFiles.filter(
+      (file) => !appliedMigrationsSet.has(file),
+    );
+
+    if (migrationsToApply.length === 0) {
+      console.log("No migrations to apply.");
+      return;
+    }
+
+    try {
+      await client.query("BEGIN");
+
+      for (const migrationFile of migrationsToApply) {
+        let absPath = path.resolve(DATABASE_MIGRATIONS_DIR, migrationFile);
+        console.log(`Applying ${migrationFile} (${absPath})`);
+
+        let fileContent = await fs.readFile(absPath, "utf-8");
+
+        await client.query(fileContent);
+        await client.query({
+          text: "INSERT INTO migrations (filename, file_content) VALUES ($1, $2)",
+          values: [migrationFile, fileContent],
+        });
       }
+
+      await client.query("COMMIT");
+    } catch (e) {
+      await client.query("ROLLBACK");
+      throw e;
     }
-    
-    console.log('All migrations applied successfully');
-  } catch (error) {
-    console.error('Migration runner error:', error);
-    throw error;
-  }
-}
-```
 
-### Running Migrations During Startup
+    console.log("Successfully applied all migrations.");
 
-Run migrations during application startup:
-
-```javascript
-// app.js
-import express from 'express';
-import { ServiceLocator } from './serviceLocator.js';
-import { runMigrations } from './db/migrations/runner.js';
-
-async function startServer() {
-  try {
-    // Run database migrations
-    const db = ServiceLocator.getDatabase();
-    await runMigrations(db);
-    
-    // Create Express app
-    const app = express();
-    
-    // ... configure app ...
-    
-    // Start server
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
-
-startServer();
-```
-
-## Transaction Management
-
-For operations that require multiple database changes, use transactions:
-
-```javascript
-// Example of a transaction in a DAL method
-async createUserWithSites(userData, siteIds) {
-  const client = await db.getClient();
-  
-  try {
-    await client.query('BEGIN');
-    
-    // Create user
-    const userResult = await client.query(
-      'INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING id',
-      [userData.name, userData.email, userData.passwordHash]
-    );
-    const userId = userResult.rows[0].id;
-    
-    // Associate user with sites
-    for (const siteId of siteIds) {
-      await client.query(
-        'INSERT INTO user_sites (user_id, site_id, role) VALUES ($1, $2, $3)',
-        [userId, siteId, 'editor']
-      );
+    if (isDevelopment) {
+      const { syncSchema } = await import("./command-sync-schema.js");
+      await syncSchema();
     }
-    
-    await client.query('COMMIT');
-    
-    // Get the complete user
-    const result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
-    return result.rows[0];
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
   } finally {
-    client.release();
+    await client.end();
   }
+
+  console.log("Done");
 }
 ```
+
+The migration command above can then be used through a CLI in the app to manually trigger the migrations. 
+
+### Examples
+
+The approach presented in this page is used and illustrated in [this private repository](https://gitlab.group.one/rankmath/seo-platform/-/commit/0c02b78cd5ec496929373bd7022113e5e4526581). There are further elements around the CLI to facilitate management of the database, such as automatically generating the schema.sql file thanks to the `command-sync-schema.js`.

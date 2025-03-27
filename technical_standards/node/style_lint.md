@@ -5,16 +5,14 @@ title: Node.js - Code Style & Linting
 
 # Code Styling & Linting
 
-Maintaining high code quality is essential for building reliable, maintainable Node.js applications. This guide outlines our approach to linting and code quality tools, including ESLint configuration and TypeScript considerations.
+Maintaining high code quality is essential for building reliable, maintainable Node.js applications. This guide outlines our approach to linting and code quality tools.
+Our recommended tool for this is ESLint.
 
 ## ESLint Configuration
 
-ESLint helps catch bugs, enforce coding standards, and maintain consistency across the codebase. Our approach emphasizes modern configuration practices.
-
 ### Modern ESLint Setup (v9+)
 
-ESLint v9 introduced "flat config," a simpler and more powerful configuration system. We use this approach for all new projects.
-
+ESLint v9 introduced "flat config," a simpler and more powerful configuration system. We recommend this approach.
 1. **Create a flat config file**
 
    Create `eslint.config.js` in your project root:
@@ -96,7 +94,7 @@ npm run lint
 
 ### Customizing Rules
 
-While we generally rely on recommended configurations, you can add project-specific rules:
+While we generally rely on recommended configurations, you can add project-specific rules if needed:
 
 ```javascript
 export default [
@@ -115,14 +113,8 @@ Always document the reasoning behind custom rules, especially when disabling rec
 
 ## TypeScript Considerations
 
-We take a pragmatic approach to TypeScript adoption, avoiding premature implementation while recognizing its benefits for larger projects.
+We take a pragmatic approach to TypeScript adoption, avoiding premature implementation.
 
-### When to Use TypeScript
-
-Consider adopting TypeScript when:
-- The project grows beyond a certain complexity
-- The team would benefit from improved type safety and documentation
-- API contracts need to be more strictly enforced
 
 ### Using TypeScript Without Compilation
 
@@ -134,34 +126,6 @@ node --experimental-strip-type-annotations app.ts
 ```
 
 From Node.js v21, you can use the `--strip-type-annotations` flag (non-experimental).
-
-### TypeScript Configuration
-
-If TypeScript becomes necessary, use a minimal `tsconfig.json` that targets modern JavaScript:
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "esModuleInterop": true,
-    "strict": true,
-    "skipLibCheck": true
-  }
-}
-```
-
-**Note:** Target at least ES2022 (or higher) when using current Node.js LTS versions, not older targets like ES2016.
-
-### Gradual TypeScript Adoption
-
-If transitioning to TypeScript, consider a gradual approach:
-
-1. Start with JSDoc type annotations in JavaScript files
-2. Add TypeScript checking to JavaScript files with `// @ts-check`
-3. Convert files to TypeScript one by one, starting with core modules
-4. Use the `allowJs` option in `tsconfig.json` during transition
 
 ## Integrating with CI/CD
 
@@ -187,6 +151,25 @@ jobs:
           node-version: '20'
       - run: npm ci
       - run: npm run lint
+```
+
+```yaml
+# Example GitLab Actions workflow
+stages:
+  - test
+
+default:
+  tags:
+    - k8s-small
+
+###############################################################################
+# Stage: test
+lint:
+  image: harbor.one.com/nodejs/node:22.14.0-noble
+  stage: test
+  script:
+    - npm ci
+    - npm run lint
 ```
 
 This ensures all code is linted before being merged, maintaining code quality across the project.
