@@ -30,7 +30,7 @@ To contribute to a repository, developers should always create a new branch from
 
 Those development branches should have a lifetime of up to a few days as we are working on small increments. In some cases, we need to implement a complex feature that requires more time, several contributors, and intermediate steps that should not be merged to develop before the whole feature is ready. In those cases, a `feature` branch must be created and used as the baseline for the small increments to start from it and to be merged into it.
 
-During the development and review phases, it is the responsibility of the branch owner to regularly update it with develop (by merging develop into the branch) to stay up-to-date and identify and fix conflicts as early as possible.
+During the development and review phases, it is the responsibility of the branch owner to regularly update it with develop to stay up-to-date and identify and fix conflicts as early as possible. During the development process, you have two options to keep your branch up to date: rebase it or merge develop into it. It is recommended to use `git rebase` to update your working branch with the latest changes on `develop`. This is a cleaner alternative than merging develop into your feature branch as it brings a cleaner history where your changes are after to the ones already on develop. Once the review process has started, you should not rebase anymore as it rewrites history and can mess with the review process. If you need to update your branch with develop, then use the merge approach.
 
 #### Branch naming
 
@@ -68,7 +68,9 @@ On `trunk`, we apply less restrictive rules:
     - Dismiss stale pull request approvals when new commits are pushed: New reviewable commits pushed to a matching branch will dismiss pull request review approvals.
 Since `trunk` is used as the baseline for deployments, it is important to keep it easily accessible for eventual hotfixes. Engineering teammates are responsible for pushing to this branch responsibly.
 
-#### Closing branches
+#### Merging & Closing branches
+
+Once a branch's merge request (or pull request) is validated (reviewed and CI green), you can merge it. We recommend using the squash option. This brings all the changes of the branch into a single commit in the target branch, making its history smaller and remove the noise of small commits done during the development cycle. It also facilitates identifying the origin of issues as one commit on the main branch equals one merge request.
 
 Branch owners are responsible for ensuring their branches don't end up stale. If they are relevant, they should be merged and deleted, otherwise they can be closed and deleted. To merge a branch, our [review process](reviews.md) must be followed.
 
