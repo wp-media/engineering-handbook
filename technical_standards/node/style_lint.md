@@ -1,9 +1,9 @@
 ---
 notion_page: https://www.notion.so/wpmedia/Node-js-Code-Style-Linting-1b6ed22a22f080b581c2f37968fc8665?pvs=4
-title: Node.js - Code Style & Linting
+title: Node.js - Code Linting
 ---
 
-# Code Styling & Linting
+# Code Linting
 
 Maintaining high code quality is essential for building reliable, maintainable Node.js applications. This guide outlines our approach to linting and code quality tools.
 Our recommended tool for this is ESLint.

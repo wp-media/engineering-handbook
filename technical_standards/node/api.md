@@ -95,19 +95,11 @@ API versioning is essential for maintaining backward compatibility while allowin
 
 Let's say we have endpoints for `/api/v1/site` and `/api/v2/site`. Chances are there is quite some shared logic between those two endpoints, despite the lack of backward compatibility. To facilitate reusing logic and still having a good overview of the endpoint's behavior at a glance, we recommend the following file structure:
 
-```diff
-- /api
--   /handlers
--     /v1
--       site.js
--       user.js
--     /v2
--       site.js
--       user.js
-+ /api
-+   /controllers
-+     site.js
-+     user.js
+```
+/api
+  /handlers
+    site.js
+    user.js
 ```
 
 **Why?** This approach:

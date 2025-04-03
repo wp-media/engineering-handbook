@@ -69,7 +69,7 @@ For routes with similar validation requirements, you can create validation middl
 // middleware/authenticateMasterKey.js
 import httpErrors from "http-errors";
 
-export function authenticateMasterKey(serviceLocator, is_combined = false) {
+export function authenticateMasterKey(serviceLocator) {
   const { config } = serviceLocator;
   const { masterAPIKey } = config;
 
@@ -83,9 +83,6 @@ export function authenticateMasterKey(serviceLocator, is_combined = false) {
     const token = req.headers.authorization;
 
     if (token !== masterAPIKey) {
-      if (is_combined) {
-        return next();
-      }
       throw new httpErrors.Unauthorized("Invalid api key");
     }
 

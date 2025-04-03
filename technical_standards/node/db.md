@@ -59,12 +59,16 @@ export default class Database {
   async getClient() {
     return this.pool.connect();
   }
-
+  /**
+  * Commented lines in this method demonstrate how debugging 
+  * & reporting can easily be added thanks to the centralized
+  * query & DB management
+  */
   async query(text, params) {
-    const start = Date.now();
+    // const start = Date.now();
     const res = await this.pool.query(text, params);
-    const duration = Date.now() - start;
-    console.log("executed query", { text, duration, rows: res.rowCount });
+    // const duration = Date.now() - start;
+    // console.log("executed query", { text, duration, rows: res.rowCount });
     return res;
   }
 }

@@ -37,21 +37,6 @@ Formatters eliminate debates about code style by applying consistent rules autom
    - Reduces configuration complexity
    - Aligns with each tool's purpose: linters for code quality, formatters for style
 
-3. **When configuration is needed, manage it within prettier directly**
-
-   If you really need specific Prettier configuration, use the `.prettierrc` file directly.
-   Don't sneak formatting preferences into editor settings:
-
-   ```diff
-   - // .vscode/settings-template.json
-   - {
-   -   "editor.formatOnSave": true,
-   -   "prettier.singleQuote": true
-   - }
-   ```
-
-   **Why?** This creates inconsistency between editor formatting and CI checks.
-
 ## Project Structure
 
 Our recommended project structure aims at increasing clarity and minimizing complexity.

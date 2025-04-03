@@ -11,7 +11,9 @@ The error handler must have the following features:
 - All errors must be reported through logs.
 - Details of errors from the application should not be disclosed to the users, unless the error is listed as "not sensitive" or "needed".
 
-The following example demonstrates the implementation of a basic error handler that logs all errors and prevents sending details about unexpected errors to the users.
+The following example demonstrates the implementation of a basic error handler that logs all errors and prevents sending details about unexpected errors to the users. Expected errors (also called Blessed Errors) are forwarded to the end users, while unexpected errors are masked and presented as a 500 Internal Server Error, to avoid leaking sensitive information about the app architecture and potential vulnerabilities.
+
+
 
 ```javascript
 // errorHandler.js
@@ -44,6 +46,8 @@ export function errorHandler() {
 }
 ```
 
+
+
 ### Registering the Error Handler
 
 Add the error handler as the last middleware in your Express app:
@@ -70,7 +74,8 @@ export default app;
 
 ### Delegating Errors to the Handler
 
-In route handlers, pass errors to Express's `next()` function instead of handling them directly:
+In route handlers, pass errors to Express's `next()` function instead of handling them directly. In an async handler `async function (req, res) {}` this is actually implied from express version 5 onwards. 
+With the classic callback based interface, and in any express versions prior to version 4 (which does not support async handlers natively) you must pass it to next:
 
 ```javascript
 // controllers/site.js
