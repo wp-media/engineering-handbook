@@ -14,7 +14,6 @@ The error handler must have the following features:
 The following example demonstrates the implementation of a basic error handler that logs all errors and prevents sending details about unexpected errors to the users. Expected errors (also called Blessed Errors) are forwarded to the end users, while unexpected errors are masked and presented as a 500 Internal Server Error, to avoid leaking sensitive information about the app architecture and potential vulnerabilities.
 
 
-
 ```javascript
 // errorHandler.js
 import httpErrors from "http-errors";
@@ -29,23 +28,20 @@ export function errorHandler() {
       return next(err);
     }
 
-    console.error(err); // Log error for debugging
+    var responseBody = { error: err.name };  
 
-    if (!isBlessedError(err)) {
-      const presentableError = new httpErrors.InternalServerError(
-        "Internal Server Error",
-        {
-          cause: err,
-        },
-      );
-      err = presentableError;
-    }
+    if (err.message) {  
+      responseBody.message = err.message  
+    }  
 
-    res.status(err.status || 500).json({ message: err.message });
+    console.error("Error while handling request-id", req.headers.get('X-Request-ID'), err.code, err.name, err.message, err.stack, err.cause, err.details);
+
+    res.status(err.code || 500).json(responseBody);
   };
 }
 ```
 
+With this implementation, the end user can only receive the error name and message, but developers can leverage `err.cause` and `err.details` to facilitate investigations and debugging. Developers must be aware that the information appended in the error message will be disclosed.
 
 
 ### Registering the Error Handler
@@ -74,7 +70,17 @@ export default app;
 
 ### Delegating Errors to the Handler
 
-In route handlers, pass errors to Express's `next()` function instead of handling them directly. In an async handler `async function (req, res) {}` this is actually implied from express version 5 onwards. 
+In route handlers, pass errors to Express's `next()` function instead of handling them directly. 
+
+In an async handler `async function (req, res) {}` this is actually implied from express version 5 onwards. It helps simplify route handlers by removing the need for `try/catch` or `next(err)`
+
+```javascript
+app.get('/users/:id', async (req, res) => {
+  const user = await findUserById(req.params.id); // If this throws, Express 5 handles it
+  res.json(user);
+});
+```
+
 With the classic callback based interface, and in any express versions prior to version 4 (which does not support async handlers natively) you must pass it to next:
 
 ```javascript
