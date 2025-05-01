@@ -16,6 +16,7 @@ BerlinDB is a powerful database abstraction layer for WordPress that simplifies 
 5. [Practical Usage Examples](#practical-usage-examples)
 6. [Table Installation and Updates](#table-installation-and-updates)
 7. [Best Practices](#best-practices)
+8. [BerlinDB Bugs/Contributions](#berlindb-bugscontributions)
 
 ## Introduction to BerlinDB
 
@@ -468,11 +469,27 @@ class CacheManager {
 }
 ```
 
-### 3. Add Table Prefixes Properly
+### 3. Installing BerlinDB via Composer
+
+BerlinDB is already available as a Composer package, so you can add it to your project just like any other Composer dependency:
+
+```
+composer require berlindb/core
+```
+
+For more information, visit the [BerlinDB package on Packagist](https://packagist.org/packages/berlindb/core).
+
+### 4. Preventing BerlinDB Conflicts
+
+Since BerlinDB is a library that may be used by multiple plugins, it's important to avoid conflicts caused by different plugins loading the same library. To prevent such conflicts, we recommend loading BerlinDB into a custom namespace.
+
+We typically achieve this using the [Mozart Composer package](https://github.com/coenjacobs/mozart), which automates the process of prefixing dependencies with your own namespace. You can find more details and setup instructions in the Mozart documentation.
+
+### 5. Add Table Prefixes Properly
 
 BerlinDB automatically adds the WordPress table prefix, so don't include it in your table name.
 
-### 4. Handle Timestamps Consistently
+### 6. Handle Timestamps Consistently
 
 ```php
 <?php
@@ -496,7 +513,7 @@ public function __construct( $item ) {
 }
 ```
 
-### 5. Design Indexes for Query Patterns
+### 7. Design Indexes for Query Patterns
 
 Create indexes based on how you'll query the data:
 
@@ -514,7 +531,7 @@ $items = $query->query([
 ]);
 ```
 
-### 6. Check for Table Existence
+### 8. Check for Table Existence
 
 ```php
 <?php
@@ -530,7 +547,7 @@ function my_plugin_init() {
 add_action( 'plugins_loaded', 'my_plugin_init' );
 ```
 
-### 7. Use Transactions for Multiple Operations
+### 9. Use Transactions for Multiple Operations
 
 ```php
 <?php
@@ -560,6 +577,16 @@ try {
     error_log('Transaction failed: ' . $e->getMessage());
 }
 ```
+
+### BerlinDB Bugs/Contributions
+
+If you encounter an issue with the core of BerlinDB, please use the [BerlinDB Core repository](https://github.com/berlindb/core) to create an issue. You can also submit a pull request there for review and merging. Once the changes are merged and released, we will update the version in Composer to load the latest release.
+
+However, a common challenge we've been facing recently is that BerlinDB merges changes into the `master` branch without creating a new release. This results in delays as we wait for a release. In such cases, you may decide to either:
+- Directly reference the `master` branch in Composer instead of using a versioned release, or
+- Manually copy the code from the `master` branch without relying on Composer.
+
+We recommend evaluating these options based on your project requirements and urgency.
 
 ## Conclusion
 
