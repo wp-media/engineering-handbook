@@ -41,3 +41,4 @@ This handbook is maintained by WP Media Engineering team. The website is built f
 #### [PHP](technical_standards/php/index.md)
 ##### [WordPress](technical_standards/php/wordpress/index.md)
 #### [Python](technical_standards/python/index.md)
+#### [Node.js](technical_standards/node/index.md)
