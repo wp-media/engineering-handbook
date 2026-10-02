@@ -32,8 +32,6 @@ This handbook is maintained by WP Media Engineering team. The website is built f
 ## Sections
 
 ### [Ways of working](ways_of_working/index.md)
-#### [Team](ways_of_working/team/index.md)
-##### [Missions & Purposes of the Engineering team](ways_of_working/team/missions_and_purposes_of_the_engineering_team.md)
 #### [Processes](ways_of_working/processes/index.md)
 #####  [Version Control](ways_of_working/processes/version_control.md)
 #####  [Reviews](ways_of_working/processes/reviews.md)
